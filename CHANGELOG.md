@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.0.1] - 2024-11-17
+
+### Added
+- Add sourcemap for minified main export module
+
+### Fixed
+- Fix registration for `back` and `forward` callbacks
+- Fix eslint config
+
 ## [v1.0.0] - 2024-11-16
 
 Initial Release
