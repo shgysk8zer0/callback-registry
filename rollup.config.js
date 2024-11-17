@@ -1,25 +1,20 @@
 import nodeResolve from '@rollup/plugin-node-resolve';
-import terser from '@rollup/plugin-terser';
 
 export default [{
-	input: 'index.js',
+	input: 'callbackRegistry.js',
 	plugins: [nodeResolve()],
 	output: [{
-		file: 'index.cjs',
+		file: 'callbackRegistry.cjs',
 		format: 'cjs',
 	}, {
-		file: 'index.min.js',
-		format: 'iife',
-		plugins: [terser()],
-		sourcemap: true,
-	}, {
-		file: 'index.mjs',
-		format: 'module',
+		file: 'callbackRegistry.mjs',
+		format: 'esm',
 	}],
 }, {
-	input: 'consts.js',
-	output: {
-		file: 'consts.cjs',
+	input: 'callbacks.js',
+	plugins: [nodeResolve()],
+	output: [{
+		file: 'callbacks.cjs',
 		format: 'cjs',
-	}
+	}],
 }];
