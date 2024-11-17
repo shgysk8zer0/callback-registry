@@ -1,4 +1,3 @@
-import './shims.js';
 import { createCallback, unregisterCallback, hasCallback, callCallback, closeRegistration } from '@aegisjsproject/callback-registry/callbacks.js';
 import { describe, test } from 'node:test';
 import assert from 'node:assert';
@@ -27,5 +26,5 @@ describe('Test callback registry', () => {
 	test('Cannot register new callbacks after closing registry', ({ signal }, () => {
 		closeRegistration();
 		assert.throws(() => createCallback(() => 'test'), 'Creating callbacks should throw if registry is closed.');
-	}))
+	}));
 });

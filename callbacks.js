@@ -40,8 +40,8 @@ const registry = new Map([
 	[FUNCS.debug.warn, console.warn],
 	[FUNCS.debug.error, console.error],
 	[FUNCS.debug.info, console.info],
-	[FUNCS.navigate.back, history.back],
-	[FUNCS.navigate.forward, history.forward],
+	[FUNCS.navigate.back, () => history.back()],
+	[FUNCS.navigate.forward, () => history.forward()],
 	[FUNCS.navigate.reload, () => history.go(0)],
 	[FUNCS.navigate.link, event => {
 		if (event.isTrusted) {
@@ -168,7 +168,7 @@ export const unregisterCallback = name => _isRegistrationOpen && registry.delete
 /**
  * Remove all callbacks from the registry
  *
- * @returns {undefined}
+ * @returns {void}
  */
 export const clearRegistry = () => registry.clear();
 
