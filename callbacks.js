@@ -1,0 +1,239 @@
+let _isRegistrationOpen = true;
+
+const $$ = (selector, base = document) => base.querySelectorAll(selector);
+
+const $ = (selector, base = document) => base.querySelector(selector);
+
+export const FUNCS = {
+	debug: {
+		log: 'aegis:debug:log',
+		info: 'aegis:debug:info',
+		warn: 'aegis:debug:warn',
+		error: 'aegis:debug:error',
+	},
+	navigate: {
+		back: 'aegis:navigate:back',
+		forward: 'aegis:navigate:forward',
+		reload: 'aegis:navigate:reload',
+		link: 'aegis:navigate:go',
+		popup: 'aegis:navigate:popup',
+	},
+	ui: {
+		print: 'aegis:ui:print',
+		remove: 'aegis:ui:remove',
+		hide: 'aegis:ui:hide',
+		unhide: 'aegis:ui:unhide',
+		showModal: 'aegis:ui:showModal',
+		closeModal: 'aegis:ui:closeModal',
+		showPopover: 'aegis:ui:showPopover',
+		hidePopover: 'aegis:ui:hidePopover',
+		togglePopover: 'aegis:ui:togglePopover',
+		enable: 'aegis:ui:enable',
+		disable: 'aegis:ui:disable',
+		scrollTo: 'aegis:ui:scrollTo',
+		prevent: 'aegis:ui:prevent',
+	},
+};
+
+const registry = new Map([
+	[FUNCS.debug.log, console.log],
+	[FUNCS.debug.warn, console.warn],
+	[FUNCS.debug.error, console.error],
+	[FUNCS.debug.info, console.info],
+	[FUNCS.navigate.back, history.back],
+	[FUNCS.navigate.forward, history.forward],
+	[FUNCS.navigate.reload, () => history.go(0)],
+	[FUNCS.navigate.link, event => {
+		if (event.isTrusted) {
+			event.preventDefault();
+			location.href = event.currentTarget.dataset.url;
+		}
+	}],
+	[FUNCS.navigate.popup, event => {
+		if (event.isTrusted) {
+			event.preventDefault();
+			globalThis.open(event.currentTarget.dataset.url);
+		}
+	}],
+	[FUNCS.ui.hide, ({ currentTarget }) => {
+		$$(currentTarget.dataset.hideSelector).forEach(el => el.hidden = true);
+	}],
+	[FUNCS.ui.unhide, ({ currentTarget }) => {
+		$$(currentTarget.dataset.unhideSelector).forEach(el => el.hidden = false);
+	}],
+	[FUNCS.ui.disable, ({ currentTarget }) => {
+		$$(currentTarget.dataset.disableSelector).forEach(el => el.disabled = true);
+	}],
+	[FUNCS.ui.enable, ({ currentTarget }) => {
+		$$(currentTarget.dataset.enableSelector).forEach(el => el.disabled = false);
+	}],
+	[FUNCS.ui.remove, ({ currentTarget }) => {
+		$$(currentTarget.dataset.removeSelector).forEach(el => el.remove());
+	}],
+	[FUNCS.ui.scrollTo, ({ currentTarget }) => {
+		const target = $(currentTarget.dataset.scrollToSelector);
+
+		if (target instanceof Element) {
+			target.scrollIntoView({
+				behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
+					? 'instant'
+					: 'smooth',
+			});
+		}
+	}],
+	[FUNCS.ui.showModal, ({ currentTarget }) => {
+		const target = $(currentTarget.dataset.showModalSelector);
+
+		if (target instanceof HTMLDialogElement) {
+			target.showModal();
+		}
+	}],
+	[FUNCS.ui.closeModal, ({ currentTarget }) => {
+		const target = $(currentTarget.dataset.closeModalSelector);
+
+		if (target instanceof HTMLDialogElement) {
+			target.close();
+		}
+	}],
+	[FUNCS.ui.showPopover, ({ currentTarget }) => {
+		const target = $(currentTarget.dataset.showPopoverSelector);
+
+		if (target instanceof HTMLElement) {
+			target.showPopover();
+		}
+	}],
+	[FUNCS.ui.hidePopover, ({ currentTarget }) => {
+		const target = $(currentTarget.dataset.hidePopoverSelector);
+
+		if (target instanceof HTMLElement) {
+			target.hidePopover();
+		}
+	}],
+	[FUNCS.ui.togglePopover, ({ currentTarget }) => {
+		const target = $(currentTarget.dataset.togglePopoverSelector);
+
+		if (target instanceof HTMLElement) {
+			target.togglePopover();
+		}
+	}],
+	[FUNCS.ui.print, () => globalThis.print()],
+	[FUNCS.ui.prevent, event => event.preventDefault()],
+]);
+
+/**
+ * Check if callback registry is open
+ *
+ * @returns {boolean} Whether or not callback registry is open
+ */
+export const isRegistrationOpen = () => _isRegistrationOpen;
+
+/**
+ * Close callback registry
+ *
+ * @returns {boolean} Whether or not the callback was succesfully removed
+ */
+export const closeRegistration = () => _isRegistrationOpen = false;
+
+/**
+ * Get an array of registered callbacks
+ *
+ * @returns {Array} A frozen array listing keys to all registered callbacks
+ */
+export const listCallbacks = () => Object.freeze(Array.from(registry.keys()));
+
+/**
+ * Check if a callback is registered
+ *
+ * @param {string} name The name/key to check for in callback registry
+ * @returns {boolean} Whether or not a callback is registered
+ */
+export const hasCallback = name => registry.has(name);
+
+/**
+ * Get a callback from the registry by name/key
+ *
+ * @param {string} name The name/key of the callback to get
+ * @returns {Function|undefined} The corresponding function registered under that name/key
+ */
+export const getCallback = name => registry.get(name);
+
+/**
+ *	 Remove a callback from the registry
+ *
+ * @param {string} name The name/key of the callback to get
+ * @returns {boolean} Whether or not the callback was successfully unregisterd
+ */
+export const unregisterCallback = name => _isRegistrationOpen && registry.delete(name);
+
+/**
+ * Remove all callbacks from the registry
+ *
+ * @returns {undefined}
+ */
+export const clearRegistry = () => registry.clear();
+
+/**
+ * Create a registered callback with a randomly generated name
+ *
+ * @param {Function} callback Callback function to register
+ * @returns {string} The automatically generated key/name of the registered callback
+ */
+export const createCallback = (callback) => registerCallback('aegis:callback:' + crypto.randomUUID(), callback);
+
+/**
+ * Call a callback fromt the registry by name/key
+ *
+ * @param {string} name The name/key of the registered function
+ * @param  {...any} args Any arguments to pass along to the function
+ * @returns {any} Whatever the return value of the function is
+ * @throws {Error} Throws if callback is not found or any error resulting from calling the function
+ */
+export function callCallback(name, ...args) {
+	if (registry.has(name)) {
+		return registry.get(name).apply(this || globalThis, args);
+	} else {
+		throw new Error(`No ${name} function registered.`);
+	}
+}
+
+/**
+ * Register a named callback in registry
+ *
+ * @param {string} name The name/key to register the callback under
+ * @param {Function} callback The callback value to register
+ * @returns {string} The registered name/key
+ */
+export function registerCallback(name, callback) {
+	if (typeof name !==  'string' || name.length === 0) {
+		throw new TypeError('Callback name must be a string.');
+	} if (! (callback instanceof Function)) {
+		throw new TypeError('Callback must be a function.');
+	} else if (! _isRegistrationOpen) {
+		throw new TypeError('Cannot register new callbacks because registry is closed.');
+	} else if (registry.has(name)) {
+		throw new Error(`Handler "${name}" is already registered.`);
+	} else {
+		registry.set(name, callback);
+		return name;
+	}
+}
+
+/**
+ * Get the host/root node of a given thing.
+ *
+ * @param {Event|Document|Element|ShadowRoot} target Source thing to search for host of
+ * @returns {Document|Element|null} The host/root node, or null
+ */
+export function getHost(target) {
+	if (target instanceof Event) {
+		return getHost(target.currentTarget);
+	} else if (target instanceof Document) {
+		return target;
+	} else if (target instanceof Element) {
+		return getHost(target.getRootNode());
+	} else if (target instanceof ShadowRoot) {
+		return target.host;
+	} else {
+		return null;
+	}
+}
