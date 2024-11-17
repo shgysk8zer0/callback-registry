@@ -1,8 +1,13 @@
 {
   "name": "@aegisjsproject/callback-registry",
   "version": "1.0.0",
-  "description": "A template repo for npm packages",
-  "keywords": [],
+  "description": " A callback registry for AegisJSProject",
+  "keywords": [
+    "aegis",
+    "callback-registry",
+    "event-binding",
+    "declarative-dom"
+  ],
   "type": "module",
   "main": "./callbacks.cjs",
   "module": "./callbackRegistry.js",
