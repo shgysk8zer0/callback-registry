@@ -18,3 +18,5 @@ shims.js
 *.bak
 *.env
 !*.map
+shims.js
+test/

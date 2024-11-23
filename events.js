@@ -1,121 +1,220 @@
 import { hasCallback, getCallback } from './callbacks.js';
 
-const EVENT_PREFIX = 'data-aegis-event-on-';
+const PREFIX = 'data-aegis-event-';
+const EVENT_PREFIX = PREFIX + 'on-';
 const EVENT_PREFIX_LENGTH = EVENT_PREFIX.length;
 const DATA_PREFIX = 'aegisEventOn';
 const DATA_PREFIX_LENGTH = DATA_PREFIX.length;
+const keySymbol = Symbol('aegis:key');
+const signalRegistry = new Map();
 
-const once = 'data-aegis-event-once',
-	passive = 'data-aegis-event-passive',
-	capture = 'data-aegis-event-capture';
+export const once = PREFIX + 'once';
+export const passive = PREFIX + 'passive';
+export const capture = PREFIX + 'capture';
+export const signal = PREFIX + 'signal';
+export const onAbort = EVENT_PREFIX + 'abort';
+export const onBlur = EVENT_PREFIX + 'blur';
+export const onFocus = EVENT_PREFIX + 'focus';
+export const onCancel = EVENT_PREFIX + 'cancel';
+export const onAuxclick = EVENT_PREFIX + 'auxclick';
+export const onBeforeinput = EVENT_PREFIX + 'beforeinput';
+export const onBeforetoggle = EVENT_PREFIX + 'beforetoggle';
+export const onCanplay = EVENT_PREFIX + 'canplay';
+export const onCanplaythrough = EVENT_PREFIX + 'canplaythrough';
+export const onChange = EVENT_PREFIX + 'change';
+export const onClick = EVENT_PREFIX + 'click';
+export const onClose = EVENT_PREFIX + 'close';
+export const onContextmenu = EVENT_PREFIX + 'contextmenu';
+export const onCopy = EVENT_PREFIX + 'copy';
+export const onCuechange = EVENT_PREFIX + 'cuechange';
+export const onCut = EVENT_PREFIX + 'cut';
+export const onDblclick = EVENT_PREFIX + 'dblclick';
+export const onDrag = EVENT_PREFIX + 'drag';
+export const onDragend = EVENT_PREFIX + 'dragend';
+export const onDragenter = EVENT_PREFIX + 'dragenter';
+export const onDragexit = EVENT_PREFIX + 'dragexit';
+export const onDragleave = EVENT_PREFIX + 'dragleave';
+export const onDragover = EVENT_PREFIX + 'dragover';
+export const onDragstart = EVENT_PREFIX + 'dragstart';
+export const onDrop = EVENT_PREFIX + 'drop';
+export const onDurationchange = EVENT_PREFIX + 'durationchange';
+export const onEmptied = EVENT_PREFIX + 'emptied';
+export const onEnded = EVENT_PREFIX + 'ended';
+export const onFormdata = EVENT_PREFIX + 'formdata';
+export const onInput = EVENT_PREFIX + 'input';
+export const onInvalid = EVENT_PREFIX + 'invalid';
+export const onKeydown = EVENT_PREFIX + 'keydown';
+export const onKeypress = EVENT_PREFIX + 'keypress';
+export const onKeyup = EVENT_PREFIX + 'keyup';
+export const onLoad = EVENT_PREFIX + 'load';
+export const onLoadeddata = EVENT_PREFIX + 'loadeddata';
+export const onLoadedmetadata = EVENT_PREFIX + 'loadedmetadata';
+export const onLoadstart = EVENT_PREFIX + 'loadstart';
+export const onMousedown = EVENT_PREFIX + 'mousedown';
+export const onMouseenter = EVENT_PREFIX + 'mouseenter';
+export const onMouseleave = EVENT_PREFIX + 'mouseleave';
+export const onMousemove = EVENT_PREFIX + 'mousemove';
+export const onMouseout = EVENT_PREFIX + 'mouseout';
+export const onMouseover = EVENT_PREFIX + 'mouseover';
+export const onMouseup = EVENT_PREFIX + 'mouseup';
+export const onWheel = EVENT_PREFIX + 'wheel';
+export const onPaste = EVENT_PREFIX + 'paste';
+export const onPause = EVENT_PREFIX + 'pause';
+export const onPlay = EVENT_PREFIX + 'play';
+export const onPlaying = EVENT_PREFIX + 'playing';
+export const onProgress = EVENT_PREFIX + 'progress';
+export const onRatechange = EVENT_PREFIX + 'ratechange';
+export const onReset = EVENT_PREFIX + 'reset';
+export const onResize = EVENT_PREFIX + 'resize';
+export const onScroll = EVENT_PREFIX + 'scroll';
+export const onScrollend = EVENT_PREFIX + 'scrollend';
+export const onSecuritypolicyviolation = EVENT_PREFIX + 'securitypolicyviolation';
+export const onSeeked = EVENT_PREFIX + 'seeked';
+export const onSeeking = EVENT_PREFIX + 'seeking';
+export const onSelect = EVENT_PREFIX + 'select';
+export const onSlotchange = EVENT_PREFIX + 'slotchange';
+export const onStalled = EVENT_PREFIX + 'stalled';
+export const onSubmit = EVENT_PREFIX + 'submit';
+export const onSuspend = EVENT_PREFIX + 'suspend';
+export const onTimeupdate = EVENT_PREFIX + 'timeupdate';
+export const onVolumechange = EVENT_PREFIX + 'volumechange';
+export const onWaiting = EVENT_PREFIX + 'waiting';
+export const onSelectstart = EVENT_PREFIX + 'selectstart';
+export const onSelectionchange = EVENT_PREFIX + 'selectionchange';
+export const onToggle = EVENT_PREFIX + 'toggle';
+export const onPointercancel = EVENT_PREFIX + 'pointercancel';
+export const onPointerdown = EVENT_PREFIX + 'pointerdown';
+export const onPointerup = EVENT_PREFIX + 'pointerup';
+export const onPointermove = EVENT_PREFIX + 'pointermove';
+export const onPointerout = EVENT_PREFIX + 'pointerout';
+export const onPointerover = EVENT_PREFIX + 'pointerover';
+export const onPointerenter = EVENT_PREFIX + 'pointerenter';
+export const onPointerleave = EVENT_PREFIX + 'pointerleave';
+export const onGotpointercapture = EVENT_PREFIX + 'gotpointercapture';
+export const onLostpointercapture = EVENT_PREFIX + 'lostpointercapture';
+export const onMozfullscreenchange = EVENT_PREFIX + 'mozfullscreenchange';
+export const onMozfullscreenerror = EVENT_PREFIX + 'mozfullscreenerror';
+export const onAnimationcancel = EVENT_PREFIX + 'animationcancel';
+export const onAnimationend = EVENT_PREFIX + 'animationend';
+export const onAnimationiteration = EVENT_PREFIX + 'animationiteration';
+export const onAnimationstart = EVENT_PREFIX + 'animationstart';
+export const onTransitioncancel = EVENT_PREFIX + 'transitioncancel';
+export const onTransitionend = EVENT_PREFIX + 'transitionend';
+export const onTransitionrun = EVENT_PREFIX + 'transitionrun';
+export const onTransitionstart = EVENT_PREFIX + 'transitionstart';
+export const onWebkitanimationend = EVENT_PREFIX + 'webkitanimationend';
+export const onWebkitanimationiteration = EVENT_PREFIX + 'webkitanimationiteration';
+export const onWebkitanimationstart = EVENT_PREFIX + 'webkitanimationstart';
+export const onWebkittransitionend = EVENT_PREFIX + 'webkittransitionend';
+export const onError = EVENT_PREFIX + 'error';
 
-const eventAttrs = [
-	EVENT_PREFIX + 'abort',
-	EVENT_PREFIX + 'blur',
-	EVENT_PREFIX + 'focus',
-	EVENT_PREFIX + 'cancel',
-	EVENT_PREFIX + 'auxclick',
-	EVENT_PREFIX + 'beforeinput',
-	EVENT_PREFIX + 'beforetoggle',
-	EVENT_PREFIX + 'canplay',
-	EVENT_PREFIX + 'canplaythrough',
-	EVENT_PREFIX + 'change',
-	EVENT_PREFIX + 'click',
-	EVENT_PREFIX + 'close',
-	EVENT_PREFIX + 'contextmenu',
-	EVENT_PREFIX + 'copy',
-	EVENT_PREFIX + 'cuechange',
-	EVENT_PREFIX + 'cut',
-	EVENT_PREFIX + 'dblclick',
-	EVENT_PREFIX + 'drag',
-	EVENT_PREFIX + 'dragend',
-	EVENT_PREFIX + 'dragenter',
-	EVENT_PREFIX + 'dragexit',
-	EVENT_PREFIX + 'dragleave',
-	EVENT_PREFIX + 'dragover',
-	EVENT_PREFIX + 'dragstart',
-	EVENT_PREFIX + 'drop',
-	EVENT_PREFIX + 'durationchange',
-	EVENT_PREFIX + 'emptied',
-	EVENT_PREFIX + 'ended',
-	EVENT_PREFIX + 'formdata',
-	EVENT_PREFIX + 'input',
-	EVENT_PREFIX + 'invalid',
-	EVENT_PREFIX + 'keydown',
-	EVENT_PREFIX + 'keypress',
-	EVENT_PREFIX + 'keyup',
-	EVENT_PREFIX + 'load',
-	EVENT_PREFIX + 'loadeddata',
-	EVENT_PREFIX + 'loadedmetadata',
-	EVENT_PREFIX + 'loadstart',
-	EVENT_PREFIX + 'mousedown',
-	EVENT_PREFIX + 'mouseenter',
-	EVENT_PREFIX + 'mouseleave',
-	EVENT_PREFIX + 'mousemove',
-	EVENT_PREFIX + 'mouseout',
-	EVENT_PREFIX + 'mouseover',
-	EVENT_PREFIX + 'mouseup',
-	EVENT_PREFIX + 'wheel',
-	EVENT_PREFIX + 'paste',
-	EVENT_PREFIX + 'pause',
-	EVENT_PREFIX + 'play',
-	EVENT_PREFIX + 'playing',
-	EVENT_PREFIX + 'progress',
-	EVENT_PREFIX + 'ratechange',
-	EVENT_PREFIX + 'reset',
-	EVENT_PREFIX + 'resize',
-	EVENT_PREFIX + 'scroll',
-	EVENT_PREFIX + 'scrollend',
-	EVENT_PREFIX + 'securitypolicyviolation',
-	EVENT_PREFIX + 'seeked',
-	EVENT_PREFIX + 'seeking',
-	EVENT_PREFIX + 'select',
-	EVENT_PREFIX + 'slotchange',
-	EVENT_PREFIX + 'stalled',
-	EVENT_PREFIX + 'submit',
-	EVENT_PREFIX + 'suspend',
-	EVENT_PREFIX + 'timeupdate',
-	EVENT_PREFIX + 'volumechange',
-	EVENT_PREFIX + 'waiting',
-	EVENT_PREFIX + 'selectstart',
-	EVENT_PREFIX + 'selectionchange',
-	EVENT_PREFIX + 'toggle',
-	EVENT_PREFIX + 'pointercancel',
-	EVENT_PREFIX + 'pointerdown',
-	EVENT_PREFIX + 'pointerup',
-	EVENT_PREFIX + 'pointermove',
-	EVENT_PREFIX + 'pointerout',
-	EVENT_PREFIX + 'pointerover',
-	EVENT_PREFIX + 'pointerenter',
-	EVENT_PREFIX + 'pointerleave',
-	EVENT_PREFIX + 'gotpointercapture',
-	EVENT_PREFIX + 'lostpointercapture',
-	EVENT_PREFIX + 'mozfullscreenchange',
-	EVENT_PREFIX + 'mozfullscreenerror',
-	EVENT_PREFIX + 'animationcancel',
-	EVENT_PREFIX + 'animationend',
-	EVENT_PREFIX + 'animationiteration',
-	EVENT_PREFIX + 'animationstart',
-	EVENT_PREFIX + 'transitioncancel',
-	EVENT_PREFIX + 'transitionend',
-	EVENT_PREFIX + 'transitionrun',
-	EVENT_PREFIX + 'transitionstart',
-	EVENT_PREFIX + 'webkitanimationend',
-	EVENT_PREFIX + 'webkitanimationiteration',
-	EVENT_PREFIX + 'webkitanimationstart',
-	EVENT_PREFIX + 'webkittransitionend',
-	EVENT_PREFIX + 'error',
+export const eventAttrs = [
+	onAbort,
+	onBlur,
+	onFocus,
+	onCancel,
+	onAuxclick,
+	onBeforeinput,
+	onBeforetoggle,
+	onCanplay,
+	onCanplaythrough,
+	onChange,
+	onClick,
+	onClose,
+	onContextmenu,
+	onCopy,
+	onCuechange,
+	onCut,
+	onDblclick,
+	onDrag,
+	onDragend,
+	onDragenter,
+	onDragexit,
+	onDragleave,
+	onDragover,
+	onDragstart,
+	onDrop,
+	onDurationchange,
+	onEmptied,
+	onEnded,
+	onFormdata,
+	onInput,
+	onInvalid,
+	onKeydown,
+	onKeypress,
+	onKeyup,
+	onLoad,
+	onLoadeddata,
+	onLoadedmetadata,
+	onLoadstart,
+	onMousedown,
+	onMouseenter,
+	onMouseleave,
+	onMousemove,
+	onMouseout,
+	onMouseover,
+	onMouseup,
+	onWheel,
+	onPaste,
+	onPause,
+	onPlay,
+	onPlaying,
+	onProgress,
+	onRatechange,
+	onReset,
+	onResize,
+	onScroll,
+	onScrollend,
+	onSecuritypolicyviolation,
+	onSeeked,
+	onSeeking,
+	onSelect,
+	onSlotchange,
+	onStalled,
+	onSubmit,
+	onSuspend,
+	onTimeupdate,
+	onVolumechange,
+	onWaiting,
+	onSelectstart,
+	onSelectionchange,
+	onToggle,
+	onPointercancel,
+	onPointerdown,
+	onPointerup,
+	onPointermove,
+	onPointerout,
+	onPointerover,
+	onPointerenter,
+	onPointerleave,
+	onGotpointercapture,
+	onLostpointercapture,
+	onMozfullscreenchange,
+	onMozfullscreenerror,
+	onAnimationcancel,
+	onAnimationend,
+	onAnimationiteration,
+	onAnimationstart,
+	onTransitioncancel,
+	onTransitionend,
+	onTransitionrun,
+	onTransitionstart,
+	onWebkitanimationend,
+	onWebkitanimationiteration,
+	onWebkitanimationstart,
+	onWebkittransitionend,
+	onError,
 ];
 
 let selector = eventAttrs.map(attr => `[${CSS.escape(attr)}]`).join(', ');
 
 const attrToProp = attr => `on${attr[EVENT_PREFIX_LENGTH].toUpperCase()}${attr.substring(EVENT_PREFIX_LENGTH + 1)}`;
 
-const attrEntriesMap = attr => [attrToProp(attr), attr];
+export const eventToProp = event => EVENT_PREFIX + event;
+
+export const hasEventAttribute = event => eventAttrs.includes(EVENT_PREFIX + event);
 
 const isEventDataAttr = ([name]) => name.startsWith(DATA_PREFIX);
-
-const DATA_EVENTS = Object.fromEntries([...eventAttrs].map(attrEntriesMap));
 
 function _addListeners(el, { signal, attrFilter = EVENTS } = {}) {
 	const dataset = el.dataset;
@@ -129,11 +228,11 @@ function _addListeners(el, { signal, attrFilter = EVENTS } = {}) {
 					passive: dataset.hasOwnProperty('aegisEventPassive'),
 					capture: dataset.hasOwnProperty('aegisEventCapture'),
 					once: dataset.hasOwnProperty('aegisEventOnce'),
-					signal,
+					signal: dataset.hasOwnProperty('aegisEventSignal') ? getSignal(dataset.aegisEventSignal) : signal,
 				});
 			}
 		} catch(err) {
-			console.error(err);
+			reportError(err);
 		}
 	}
 }
@@ -169,6 +268,7 @@ const observer = new MutationObserver(records => {
 							once: record.target.hasAttribute(once),
 							capture: record.target.hasAttribute(capture),
 							passive: record.target.hasAttribute(passive),
+							signal: record.target.hasAttribute(signal) ? getSignal(record.target.getAttribute(signal)) : undefined,
 						}
 					);
 				}
@@ -177,7 +277,106 @@ const observer = new MutationObserver(records => {
 	});
 });
 
-export const EVENTS = { ...DATA_EVENTS, once, passive, capture };
+export const EVENTS = {
+	onAbort,
+	onBlur,
+	onFocus,
+	onCancel,
+	onAuxclick,
+	onBeforeinput,
+	onBeforetoggle,
+	onCanplay,
+	onCanplaythrough,
+	onChange,
+	onClick,
+	onClose,
+	onContextmenu,
+	onCopy,
+	onCuechange,
+	onCut,
+	onDblclick,
+	onDrag,
+	onDragend,
+	onDragenter,
+	onDragexit,
+	onDragleave,
+	onDragover,
+	onDragstart,
+	onDrop,
+	onDurationchange,
+	onEmptied,
+	onEnded,
+	onFormdata,
+	onInput,
+	onInvalid,
+	onKeydown,
+	onKeypress,
+	onKeyup,
+	onLoad,
+	onLoadeddata,
+	onLoadedmetadata,
+	onLoadstart,
+	onMousedown,
+	onMouseenter,
+	onMouseleave,
+	onMousemove,
+	onMouseout,
+	onMouseover,
+	onMouseup,
+	onWheel,
+	onPaste,
+	onPause,
+	onPlay,
+	onPlaying,
+	onProgress,
+	onRatechange,
+	onReset,
+	onResize,
+	onScroll,
+	onScrollend,
+	onSecuritypolicyviolation,
+	onSeeked,
+	onSeeking,
+	onSelect,
+	onSlotchange,
+	onStalled,
+	onSubmit,
+	onSuspend,
+	onTimeupdate,
+	onVolumechange,
+	onWaiting,
+	onSelectstart,
+	onSelectionchange,
+	onToggle,
+	onPointercancel,
+	onPointerdown,
+	onPointerup,
+	onPointermove,
+	onPointerout,
+	onPointerover,
+	onPointerenter,
+	onPointerleave,
+	onGotpointercapture,
+	onLostpointercapture,
+	onMozfullscreenchange,
+	onMozfullscreenerror,
+	onAnimationcancel,
+	onAnimationend,
+	onAnimationiteration,
+	onAnimationstart,
+	onTransitioncancel,
+	onTransitionend,
+	onTransitionrun,
+	onTransitionstart,
+	onWebkitanimationend,
+	onWebkitanimationiteration,
+	onWebkitanimationstart,
+	onWebkittransitionend,
+	onError,
+	once,
+	passive,
+	capture,
+};
 
 /**
  * Register an attribute to observe for adding/removing event listeners
@@ -212,6 +411,53 @@ export function registerEventAttribute(attr, {
 	}
 
 	return fullAttr;
+}
+
+/**
+ * Register an `AbortSignal` to be used in declarative HTML as a value for `data-aegis-event-signal`
+ *
+ * @param {AbortSignal} signal The signal to register
+ * @returns {string} The registered key
+ * @throws {TypeError} Thrown if not an `AbortSignal`
+ */
+export function registerSignal(signal) {
+	if (! (signal instanceof AbortSignal)) {
+		throw new TypeError('Signal must be an `AbortSignal`.');
+	} else {
+		const key = Symbol.for('aegis:event:signal:' + crypto.randomUUID());
+		Object.defineProperty(signal, keySymbol, { value: key, writable: false, enumerable: false });
+		signalRegistry.set(key, signal);
+		signal.addEventListener('abort', ({ target }) => unregisterSignal(target[keySymbol]), { once: true });
+
+		return key.description;
+	}
+}
+
+/**
+ * Gets and `AbortSignal` from the registry
+ *
+ * @param {string|signal} key The registered key for the signal
+ * @returns {AbortSignal|void} The corresponding `AbortSignal`, if any
+ */
+export const getSignal = key => typeof key === 'symbol' ? signalRegistry.get(key) : signalRegistry.get(Symbol.for(key));
+
+/**
+ * Removes an `AbortSignal` from the registry
+ *
+ * @param {AbortSignal|string|symbol} signal An `AbortSignal` or the registered key for one
+ * @returns {boolean} Whether or not the signal was sucessfully unregistered
+ * @throws {TypeError} Throws if `signal` is not an `AbortSignal` or the key for a registered signal
+ */
+export function unregisterSignal(signal) {
+	if (signal instanceof AbortSignal) {
+		return unregisterSignal(signal[keySymbol]);
+	} else if (typeof signal === 'string') {
+		return unregisterSignal(Symbol.for(signal));
+	} else if (typeof signal === 'symbol') {
+		return signalRegistry.delete(signal);
+	} else {
+		throw new TypeError('Signal must be an `AbortSignal` or registered key/attribute.');
+	}
 }
 
 /**

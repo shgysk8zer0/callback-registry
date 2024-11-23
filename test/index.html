@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="color-scheme" content="light dark" />
+		<meta http-equiv="Content-Security-Policy" content="
+			default-src 'none';
+			script-src 'self' 'sha384-eJrxADfQX0Or6XwzrwsSYeLEhlapE/DdCFOK+drHPuF0CDx4TfpqJDMPUhfBbopD';
+			style-src 'self' blob:;
+			img-src 'self' blob:;
+		" />
+		<title>AegisJSProject Callback Registry</title>
+		<script type="importmap">
+			{
+				"imports": {
+					"@aegisjsproject/callback-registry": "../callbackRegistry.js",
+					"@aegisjsproject/callback-registry/": "../",
+					"@aegisjsproject/": "../node_modules/@aegisjsproject/"
+				}
+			}
+		</script>
+		<script type="module" src="./index.js" referrerpolicy="no-referrer"></script>
+	</head>
+	<body></body>
+</html>

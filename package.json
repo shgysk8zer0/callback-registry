@@ -40,12 +40,13 @@
   "private": false,
   "scripts": {
     "test": "npm run lint:js && npm run run:tests",
+    "start": "http-server ./ -c-1 --port 8080 --gzip true --brotli true -a localhost -o /test/",
     "preversion": "npm test && npm run build",
     "prepare": "npm test && npm run build",
     "lint:js": "eslint .",
     "fix:js": "eslint . --fix",
     "build": "npm run build:js",
-    "run:tests": "node --test",
+    "run:tests": "node --test *.test.js",
     "clean": "rm -f ./*.cjs",
     "build:js": "npm run clean && rollup -c rollup.config.js",
     "create:lock": "npm i --package-lock-only --ignore-scripts --no-audit --no-fund",
@@ -78,6 +79,7 @@
     "@rollup/plugin-terser": "^0.4.4",
     "@shgysk8zer0/eslint-config": "^1.0.1",
     "eslint": "^9.15.0",
+    "http-server": "^14.1.1",
     "rollup": "^4.27.2"
   }
 }
