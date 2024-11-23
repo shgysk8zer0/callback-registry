@@ -5,13 +5,16 @@ const EVENT_PREFIX = PREFIX + 'on-';
 const EVENT_PREFIX_LENGTH = EVENT_PREFIX.length;
 const DATA_PREFIX = 'aegisEventOn';
 const DATA_PREFIX_LENGTH = DATA_PREFIX.length;
-const keySymbol = Symbol('aegis:key');
+const signalSymbol = Symbol('aegis:signal');
+const controllerSymbol = Symbol('aegis:controller');
 const signalRegistry = new Map();
+const controllerRegistry = new Map();
 
 export const once = PREFIX + 'once';
 export const passive = PREFIX + 'passive';
 export const capture = PREFIX + 'capture';
 export const signal = PREFIX + 'signal';
+export const controller = PREFIX + 'controller';
 export const onAbort = EVENT_PREFIX + 'abort';
 export const onBlur = EVENT_PREFIX + 'blur';
 export const onFocus = EVENT_PREFIX + 'focus';
@@ -414,6 +417,87 @@ export function registerEventAttribute(attr, {
 }
 
 /**
+ * Registers an `AbortController` in the controller registry and returns the key for it
+ *
+ * @param {AbortController} controller
+ * @returns {string} The randomly generated key with which the controller is registered
+ * @throws {TypeError} If controller is not an `AbortController`
+ * @throws {Error} Any `reason` if controller is already aborted
+ */
+export function registerController(controller) {
+	if (! (controller instanceof AbortController)) {
+		throw new TypeError('Controller is not an `AbortSignal.');
+	} else if (controller.signal.aborted) {
+		throw controller.signal.reason;
+	} else if (typeof controller.signal[controllerSymbol] === 'string') {
+		return controller.signal[controllerSymbol];
+	} else {
+		const key = 'aegis:event:controller:' + crypto.randomUUID();
+		Object.defineProperty(controller.signal, controllerSymbol, { value: key, writable: false, enumerable: false });
+		controllerRegistry.set(key, controller);
+
+		controller.signal.addEventListener('abort', unregisterController, { once: true });
+
+		return key;
+	}
+}
+
+/**
+ * Removes a controller from the registry
+ *
+ * @param {AbortController|AbortSignal|string} key The registed key or the controller or signal it corresponds to
+ * @returns {boolean} Whether or not the controller was successfully unregistered
+ */
+export function unregisterController(key) {
+	if (key instanceof AbortController) {
+		return controllerRegistry.delete(key.signal[controllerSymbol]);
+	} else if (key instanceof AbortSignal) {
+		return controllerRegistry.delete(key[controllerSymbol]);
+	} else {
+		return controllerRegistry.delete(key);
+	}
+}
+
+/**
+ * Creates and registers an `AbortController` in the controller registry and returns the key for it
+ *
+ * @param {object} options
+ * @param {AbortSignal} [options.signal] An optional `AbortSignal` to externally abort the controller with
+ * @returns {string} The randomly generated key with which the controller is registered
+ */
+export function createController({ signal } = {}) {
+	const controller = new AbortController();
+
+	if (signal instanceof AbortSignal) {
+		signal.addEventListener('abort', ({ target }) => controller.abort(target.reason), { signal: controller.signal});
+	}
+
+	return registerController(controller);
+}
+
+/**
+ * Get a registetd controller from the registry
+ *
+ * @param {string} key Generated key with which the controller was registered
+ * @returns {AbortController|void} Any registered controller, if any
+ */
+export const getController = key => controllerRegistry.get(key);
+
+export function abortController(key, reason) {
+	const controller = getController(key);
+
+	if (! (controller instanceof AbortController)) {
+		return false;
+	} else if (typeof reason === 'string') {
+		controller.abort(new Error(reason));
+		return true;
+	} else {
+		controller.abort(reason);
+		return true;
+	}
+}
+
+/**
  * Register an `AbortSignal` to be used in declarative HTML as a value for `data-aegis-event-signal`
  *
  * @param {AbortSignal} signal The signal to register
@@ -423,37 +507,37 @@ export function registerEventAttribute(attr, {
 export function registerSignal(signal) {
 	if (! (signal instanceof AbortSignal)) {
 		throw new TypeError('Signal must be an `AbortSignal`.');
+	} else if (typeof signal[signalSymbol] === 'string') {
+		return signal[signalSymbol];
 	} else {
-		const key = Symbol.for('aegis:event:signal:' + crypto.randomUUID());
-		Object.defineProperty(signal, keySymbol, { value: key, writable: false, enumerable: false });
+		const key = 'aegis:event:signal:' + crypto.randomUUID();
+		Object.defineProperty(signal, signalSymbol, { value: key, writable: false, enumerable: false });
 		signalRegistry.set(key, signal);
-		signal.addEventListener('abort', ({ target }) => unregisterSignal(target[keySymbol]), { once: true });
+		signal.addEventListener('abort', ({ target }) => unregisterSignal(target[signalSymbol]), { once: true });
 
-		return key.description;
+		return key;
 	}
 }
 
 /**
  * Gets and `AbortSignal` from the registry
  *
- * @param {string|signal} key The registered key for the signal
+ * @param {string} key The registered key for the signal
  * @returns {AbortSignal|void} The corresponding `AbortSignal`, if any
  */
-export const getSignal = key => typeof key === 'symbol' ? signalRegistry.get(key) : signalRegistry.get(Symbol.for(key));
+export const getSignal = key => signalRegistry.get(key);
 
 /**
  * Removes an `AbortSignal` from the registry
  *
- * @param {AbortSignal|string|symbol} signal An `AbortSignal` or the registered key for one
+ * @param {AbortSignal|string} signal An `AbortSignal` or the registered key for one
  * @returns {boolean} Whether or not the signal was sucessfully unregistered
  * @throws {TypeError} Throws if `signal` is not an `AbortSignal` or the key for a registered signal
  */
 export function unregisterSignal(signal) {
 	if (signal instanceof AbortSignal) {
-		return unregisterSignal(signal[keySymbol]);
+		return signalRegistry.delete(signal[signalSymbol]);
 	} else if (typeof signal === 'string') {
-		return unregisterSignal(Symbol.for(signal));
-	} else if (typeof signal === 'symbol') {
 		return signalRegistry.delete(signal);
 	} else {
 		throw new TypeError('Signal must be an `AbortSignal` or registered key/attribute.');
@@ -477,6 +561,7 @@ export function attachListeners(target, { signal } = {}) {
 
 	return target;
 }
+
 /**
  * Add a node to the `MutationObserver` to observe attributes and add/remove event listeners
  *
@@ -484,6 +569,7 @@ export function attachListeners(target, { signal } = {}) {
  */
 export function observeEvents(root = document) {
 	attachListeners(root);
+
 	observer.observe(root, {
 		subtree: true,
 		childList:true,

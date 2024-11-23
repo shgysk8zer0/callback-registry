@@ -1,6 +1,6 @@
 import {
 	eventToProp, capture as captureAttr, once as onceAttr, passive as passiveAttr, signal as signalAttr,
-	registerEventAttribute, hasEventAttribute, registerSignal,
+	registerEventAttribute, hasEventAttribute, registerSignal, abortController,
 } from './events.js';
 
 let _isRegistrationOpen = true;
@@ -40,6 +40,7 @@ export const FUNCS = {
 		prevent: 'aegis:ui:prevent',
 		revokeObjectURL: 'aegis:ui:revokeObjectURL',
 		cancelAnimationFrame: 'aegis:ui:cancelAnimationFrame',
+		abortController: 'aegis:ui:controller:abort',
 	},
 };
 
@@ -94,6 +95,7 @@ const registry = new Map([
 	[FUNCS.ui.cancelAnimationFrame, ({ currentTarget }) => cancelAnimationFrame(parseInt(currentTarget.dataset.animationFrame))],
 	[FUNCS.ui.clearInterval, ({ currentTarget }) => clearInterval(parseInt(currentTarget.dataset.clearInterval))],
 	[FUNCS.ui.clearTimeout, ({ currentTarget }) => clearTimeout(parseInt(currentTarget.dataset.timeout))],
+	[FUNCS.ui.abortController, ({ currentTarget }) => abortController(currentTarget.dataset.aegisEventController, currentTarget.dataset.aegisControllerReason)],
 	[FUNCS.ui.showModal, ({ currentTarget }) => {
 		const target = $(currentTarget.dataset.showModalSelector);
 

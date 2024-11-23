@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Add inviividual event constant/attribute exports
-- Add support for `AbortSignal`s
+- Add support for `AbortSignal`s and `AbortController`s
 - Add `on()` function for more conventient event handling, similar to `addEventListener()`
 - Add new pre-defined handlers (e.g. `FUNCS.ui.close`)
 - Local testing page in repo, excluded from published package

@@ -1,8 +1,33 @@
-import { onClick, onClose, observeEvents, onLoad, onError, registerSignal, signal as signalAttr } from '@aegisjsproject/callback-registry/events.js';
-import { FUNCS, on } from '@aegisjsproject/callback-registry/callbacks.js';
+import { onClick, onClose, observeEvents, onLoad, onError, registerSignal, signal as signalAttr, controller as controllerAttr, registerController } from '@aegisjsproject/callback-registry/events.js';
+import { createCallback, FUNCS, on } from '@aegisjsproject/callback-registry/callbacks.js';
 
 const controller = new AbortController();
 const signal = registerSignal(controller.signal);
+const animController = new AbortController();
+const animSignal = AbortSignal.any([controller.signal, animController.signal]);
+
+function html(strings, ...values) {
+	const template = document.createElement('template');
+
+	template.setHTMLUnsafe(String.raw(strings, ...values.map(val => {
+		if (val instanceof Function) {
+			return createCallback(val);
+		} else if (val instanceof AbortSignal) {
+			return registerSignal(val);
+		} else if (val instanceof AbortController) {
+			return registerController(val);
+		} else {
+			return val?.toString() ?? '';
+		}
+	})));
+
+	return template.content;
+}
+
+animSignal.addEventListener('abort', () => {
+	cancelAnimationFrame(parseInt(document.getElementById('caf').dataset.animationFrame));
+	requestAnimationFrame(() => document.getElementById('container').style.removeProperty('transform'));
+});
 
 function rotate(el = document.getElementById('container'), angle = 0, btn = document.getElementById('caf')) {
 	el.style.setProperty('transform', `rotate(${angle}deg)`);
@@ -15,7 +40,7 @@ const getSvg = () => new Blob([`
 	</svg>
 `], { type: 'image/svg+xml' });
 
-document.body.setHTMLUnsafe(`
+document.body.append(html`
 	<nav id="nav" ${on('my:foo', ({
 		type, timeStamp, isTrusted,
 		detail: { type: dType, timeStamp: dtimeStamp, isTrusted: dIsTrusted, target: { tagName: target } } = {},
@@ -34,8 +59,8 @@ document.body.setHTMLUnsafe(`
 		<button type="button" ${onClick}="${FUNCS.navigate.close}" ${signalAttr}="${signal}">Close</button>
 		<button type="button" ${onClick}="${FUNCS.ui.print}" ${signalAttr}="${signal}">Print</button>
 		<button type="button" ${onClick}="${FUNCS.ui.showModal}" data-show-modal-selector="#dialog" ${signalAttr}="${signal}">Show Dialog</button>
-		<button type="button" id="caf" ${onClick}="${FUNCS.ui.cancelAnimationFrame}" ${signalAttr}="${signal}">Cancel Animation</button>
-		<button type="button" ${on('click', () => alert('Testing!'), { once: true, signal })}>Alert</button>
+		<button type="button" id="caf" ${onClick}="${FUNCS.ui.abortController}" ${controllerAttr}="${animController}" ${signalAttr}="${animSignal}">Cancel Animation</button>
+		<button type="button" ${onClick}="${() => alert('Hello, World!')}">Alert</button>
 		<button type="button" ${on('click', event => {
 		const li = document.createElement('li');
 		li.textContent = `${event.type} @ ${event.timeStamp}`;
