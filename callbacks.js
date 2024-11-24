@@ -1,3 +1,8 @@
+import {
+	eventToProp, capture as captureAttr, once as onceAttr, passive as passiveAttr, signal as signalAttr,
+	registerEventAttribute, hasEventAttribute, registerSignal, abortController,
+} from './events.js';
+
 let _isRegistrationOpen = true;
 
 const $$ = (selector, base = document) => base.querySelectorAll(selector);
@@ -15,6 +20,7 @@ export const FUNCS = {
 		back: 'aegis:navigate:back',
 		forward: 'aegis:navigate:forward',
 		reload: 'aegis:navigate:reload',
+		close: 'aegis:navigate:close',
 		link: 'aegis:navigate:go',
 		popup: 'aegis:navigate:popup',
 	},
@@ -32,6 +38,9 @@ export const FUNCS = {
 		disable: 'aegis:ui:disable',
 		scrollTo: 'aegis:ui:scrollTo',
 		prevent: 'aegis:ui:prevent',
+		revokeObjectURL: 'aegis:ui:revokeObjectURL',
+		cancelAnimationFrame: 'aegis:ui:cancelAnimationFrame',
+		abortController: 'aegis:ui:controller:abort',
 	},
 };
 
@@ -43,6 +52,7 @@ const registry = new Map([
 	[FUNCS.navigate.back, () => history.back()],
 	[FUNCS.navigate.forward, () => history.forward()],
 	[FUNCS.navigate.reload, () => history.go(0)],
+	[FUNCS.navigate.close, () => globalThis.close()],
 	[FUNCS.navigate.link, event => {
 		if (event.isTrusted) {
 			event.preventDefault();
@@ -81,6 +91,11 @@ const registry = new Map([
 			});
 		}
 	}],
+	[FUNCS.ui.revokeObjectURL, ({ currentTarget }) => URL.revokeObjectURL(currentTarget.src)],
+	[FUNCS.ui.cancelAnimationFrame, ({ currentTarget }) => cancelAnimationFrame(parseInt(currentTarget.dataset.animationFrame))],
+	[FUNCS.ui.clearInterval, ({ currentTarget }) => clearInterval(parseInt(currentTarget.dataset.clearInterval))],
+	[FUNCS.ui.clearTimeout, ({ currentTarget }) => clearTimeout(parseInt(currentTarget.dataset.timeout))],
+	[FUNCS.ui.abortController, ({ currentTarget }) => abortController(currentTarget.dataset.aegisEventController, currentTarget.dataset.aegisControllerReason)],
 	[FUNCS.ui.showModal, ({ currentTarget }) => {
 		const target = $(currentTarget.dataset.showModalSelector);
 
@@ -235,5 +250,41 @@ export function getHost(target) {
 		return target.host;
 	} else {
 		return null;
+	}
+}
+
+export function on(event, callback, { capture = false, passive = false, once = false, signal } = {}) {
+	if (callback instanceof Function) {
+		return on(event, createCallback(callback), { capture, passive, once, signal });
+	} else if (typeof callback !== 'string' || callback.length === 0) {
+		throw new TypeError('Callback must be a function or a registered callback string.');
+	} else if (typeof event !== 'string' || event.length === 0) {
+		throw new TypeError('Event must be a non-empty string.');
+	} else {
+		if (! hasEventAttribute(event)) {
+			registerEventAttribute(event);
+		}
+
+		const parts = [[eventToProp(event), callback]];
+
+		if (capture) {
+			parts.push([captureAttr, '']);
+		}
+
+		if (passive) {
+			parts.push([passiveAttr, '']);
+		}
+
+		if (once) {
+			parts.push([onceAttr, '']);
+		}
+
+		if (signal instanceof AbortSignal) {
+			parts.push([signalAttr, registerSignal(signal)]);
+		} else if (typeof signal === 'string') {
+			parts.push([signalAttr, signal]);
+		}
+
+		return parts.map(([prop, val]) => `${prop}="${val}"`).join(' ');
 	}
 }

@@ -1,3 +1,4 @@
+import './shims.js';
 import { createCallback, unregisterCallback, hasCallback, callCallback, closeRegistration } from '@aegisjsproject/callback-registry/callbacks.js';
 import { describe, test } from 'node:test';
 import assert from 'node:assert';
